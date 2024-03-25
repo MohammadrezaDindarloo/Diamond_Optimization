@@ -42,11 +42,11 @@ namespace gtsam
         {
             if (H1)
             {
-                *H1 = (Matrix(1, 1) << 0).finished();
+                *H1 = (Matrix(1, 1) << 1).finished();
             }
             if (H2)
             {
-                *H2 = (Matrix(1, 1) << 0).finished();
+                *H2 = (Matrix(1, 1) << 1).finished();
             }
 
             if (first > second)
@@ -58,6 +58,36 @@ namespace gtsam
     };
 }
 
+
+
+namespace gtsam
+{   // this factor says: second should be larger than the first
+    class InequalityPLUS : public NoiseModelFactor2<double, double>
+    {
+        public:
+        // Constructor
+        InequalityPLUS(Key key1, Key key2, const SharedNoiseModel &model) 
+        : NoiseModelFactor2<double, double>(model, key1, key2){}
+
+        // Evaluate the error
+        Vector evaluateError(const double &first, const double &second,
+                             OptionalMatrixType H1,
+                             OptionalMatrixType H2) const override
+        {   
+            double rate = 10.0;
+            if (H1)
+            {
+                *H1 = (Matrix(1, 1) << rate * std::exp(rate*(first-second))).finished();
+            }
+            if (H2)
+            {
+                *H2 = (Matrix(1, 1) << -1 * rate * std::exp(rate*(first-second))).finished();
+            }
+
+            return (Vector(1) << std::exp(rate*(first-second))).finished();  // if first > second ----> error is higth  // if second > first ----> good
+        }
+    };
+}
 
 
 namespace gtsam
@@ -79,11 +109,11 @@ namespace gtsam
         {
             if (H1)
             {
-                *H1 = (Matrix(1, 1) << 1).finished();
+                *H1 = (Matrix(1, 1) << 1.0).finished();
             }
             if (H2)
             {
-                *H2 = (Matrix(1, 1) << 1).finished();
+                *H2 = (Matrix(1, 1) << 1.0).finished();
             }
 
             double error = beta + alpha - measurement_;
